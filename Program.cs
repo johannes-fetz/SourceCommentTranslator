@@ -84,6 +84,7 @@ namespace SourceTranslator
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine(message);
+            Console.ForegroundColor = ConsoleColor.White;
             Environment.Exit(-1);
         }
 
@@ -197,30 +198,40 @@ namespace SourceTranslator
 
         private static string ReversoTranslation(string input, string direction, bool useCorrector = true, int maxTranslationChars = 800)
         {
-            HttpWebRequest http = (HttpWebRequest)WebRequest.Create(Program.ReversoWebserviceUri);
-            http.Accept = "application/json";
-            http.ContentType = "application/json; charset=utf-8";
-            http.Method = "POST";
-
-            string payload = BuildReversoPayload(input, direction, useCorrector, maxTranslationChars);
-            UTF8Encoding encoding = new UTF8Encoding();
-            Byte[] bytes = encoding.GetBytes(payload);
-
-            using (Stream newStream = http.GetRequestStream())
+            try
             {
-                newStream.Write(bytes, 0, bytes.Length);
-                newStream.Close();
+                HttpWebRequest http = (HttpWebRequest)WebRequest.Create(Program.ReversoWebserviceUri);
+                http.Accept = "application/json";
+                http.ContentType = "application/json; charset=utf-8";
+                http.Method = "POST";
 
-                using (WebResponse response = http.GetResponse())
+                string payload = BuildReversoPayload(input, direction, useCorrector, maxTranslationChars);
+                UTF8Encoding encoding = new UTF8Encoding();
+                Byte[] bytes = encoding.GetBytes(payload);
+
+                using (Stream newStream = http.GetRequestStream())
                 {
-                    using (Stream stream = response.GetResponseStream())
+                    newStream.Write(bytes, 0, bytes.Length);
+                    newStream.Close();
+
+                    using (WebResponse response = http.GetResponse())
                     {
-                        using (StreamReader sr = new StreamReader(stream))
+                        using (Stream stream = response.GetResponseStream())
                         {
-                            return Program.ExtractTranslationFromResponse(sr.ReadToEnd());
+                            using (StreamReader sr = new StreamReader(stream))
+                            {
+                                return Program.ExtractTranslationFromResponse(sr.ReadToEnd());
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(string.Format("Fail to translate {0}", input));
+                Console.ForegroundColor = ConsoleColor.White;
+                return null;
             }
         }
 
