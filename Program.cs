@@ -61,13 +61,16 @@ namespace SourceTranslator
 
                 direction += "-5"; // We append the "-5" direction suffix for reverso;
                 string res = Program.TranslateComments(contents, mode, direction);
-
-                File.WriteAllText(outputPath, res, destinationEncoding);
-
                 Console.WriteLine();
                 Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "{0} generated.", Path.GetFileName(outputPath)));
+                if (res != null)
+                {
+                    File.WriteAllText(outputPath, res, destinationEncoding);
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "{0} generated.", Path.GetFileName(outputPath)));
+                }
+                else
+                    Console.WriteLine("Nothing to translate.");
             }
             catch (Exception ex)
             {
@@ -122,8 +125,9 @@ namespace SourceTranslator
         {
             MatchCollection collection = Program.CommentRegex.Matches(code);
             if (collection.Count <= 0)
-                return code;
+                return null;
             int step = 0;
+            int translationReplacedCount = 0;
             StringBuilder result = new StringBuilder();
             int index = 0;
             foreach (Match match in collection)
@@ -152,7 +156,10 @@ namespace SourceTranslator
                 }
                 result.Append(match.Value.Replace(toTranslate, output));
                 index = match.Index + match.Length;
+                ++translationReplacedCount;
             }
+            if (translationReplacedCount <= 0)
+                return null;
             if (index < code.Length)
                 result.Append(code.Substring(index, code.Length - index));
             return result.ToString();
