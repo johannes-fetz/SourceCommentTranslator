@@ -26,6 +26,7 @@ namespace SourceTranslator
                 Console.WriteLine("Source Comment Translator v1.0 © 2020 by Johannes Fetz");
                 Console.WriteLine("ReversoTranslation © 2020 Reverso-Softissimo. All rights reserved.");
                 Console.WriteLine();
+#if !DEBUG
                 if (args.Length != 3)
                 {
                     Console.WriteLine("Usage: [PATH] [REVERSO_DIRECTION] [MODE]");
@@ -38,7 +39,7 @@ namespace SourceTranslator
                     Console.WriteLine("Example: MY_HEADER.H jpn-eng 2");
                     return;
                 }
-
+#endif
                 string path = args[0];
                 if (!File.Exists(path))
                     Program.Error(string.Format("{0} not found.", path));
@@ -52,7 +53,7 @@ namespace SourceTranslator
                 if (!int.TryParse(args[2], out modeInt))
                     Program.Error("Invalid mode.");
                 TranslationMode mode = (TranslationMode)modeInt;
-                
+
                 byte[] raw = File.ReadAllBytes(path);
                 Encoding sourceEncoding = direction.StartsWith("jpn") ? Encoding.GetEncoding(932) : Encoding.UTF8;
                 Encoding destinationEncoding = direction.EndsWith("jpn") ? Encoding.GetEncoding(932) : Encoding.UTF8;
@@ -128,8 +129,10 @@ namespace SourceTranslator
             {
                 Program.ConsoleProgressBar(++step, collection.Count);
                 string toTranslate = match.Value.Trim('\\', '/', '-', '*', '_', ' ', '\t', '\n', '\r');
+                if (toTranslate.StartsWith("\""))
+                    continue;
                 string translation = Program.ReversoTranslation(toTranslate, direction, useCorrector, maxTranslationChars);
-                if (string.IsNullOrWhiteSpace(translation))
+                if (string.IsNullOrWhiteSpace(translation) || string.Equals(toTranslate.Trim('.', '_'), translation.Trim('.', '_'), StringComparison.InvariantCultureIgnoreCase))
                     continue;
                 result.Append(code.Substring(index, match.Index - index));
                 string output;
@@ -163,7 +166,7 @@ namespace SourceTranslator
                          .ToString();
         }
 
-        private static readonly string[] AvailableReversoDirections = new string [] { "jpn-eng", "eng-jpg", "jpn-fra", "fra-jpg", "eng-fra", "fra-eng"};
+        private static readonly string[] AvailableReversoDirections = new string[] { "jpn-eng", "eng-jpg", "jpn-fra", "fra-jpg", "eng-fra", "fra-eng" };
 
         private static readonly Uri ReversoWebserviceUri = new Uri("https://async5.reverso.net/WebReferences/WSAJAXInterface.asmx/TranslateCorrWS");
 
